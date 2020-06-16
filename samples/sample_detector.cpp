@@ -9,9 +9,23 @@ int main()
 	config.detect_thresh = 0.5;
 	config.file_model_cfg = "../configs/yolov3.cfg";
 	config.file_model_weights = "../configs/yolov3.weights";
+	config.track_type = DEEPSORT;
+	config.deepsort_file = "../configs/deepsort.engine";
 	//config.calibration_image_list_file_txt = "";
 	//config.inference_precison = FP32;
 	detector.init(config);
+
+	// void * vr = NULL;
+	// VRECOG_PARAM rparam;
+	// rparam.gpuid = 0;
+	// rparam.mode = GPU_MODE;
+	// const char *model_path = "../config/vehicle_values.trt"; //
+	// //const char *model_path = "model/Duomi_Resnet18MutiFC_120_40_28_500_0.978125.onnx";
+	// int init = VRecog_Init(vr,model_path, &rparam);
+	// if (init != 0){
+	// 	cout << "VRecog: init failed" << endl;
+	// 	return nullptr;
+	// }
 
     /***************************** Single Video *********************/
     cv::VideoCapture capture;

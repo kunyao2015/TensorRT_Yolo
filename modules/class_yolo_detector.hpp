@@ -17,6 +17,9 @@
 
 #include "class_detector.h"
 #include "sort.h"
+
+#include "../deepsort/DeepAppearanceDescriptor/FeatureTensor.h"
+#include "../deepsort/KalmanFilter/tracker.h"
 //struct Result
 //{
 //	int		 id = -1;
@@ -76,6 +79,8 @@ public:
 		this->parse_config();
 
 		this->build_net();
+
+		this->build_track();
 		
 	}
 /*
@@ -114,16 +119,16 @@ public:
 				std::vector<TrackingBox> &vec_result)
 	{
 		
-		cv::Mat image(height,width,CV_8UC3); 
-		image.data = imgdata;
+		cv::Mat raw_image(height,width,CV_8UC3); 
+		raw_image.data = imgdata;
 		//std::cout << image.size() << std::endl;
 		int inputH = _p_net->getInputH();
 		int inputW = _p_net->getInputW();
 		//std::cout<< "width:"<<width << ";height:" << height << ";channel:" <<channel <<std::endl;
 		//std::cout << "inputH:" << inputH << ";inputW:" << inputW <<std::endl;
 		cv::Mat imageRGB;
-		cv::resize(image,image,cv::Size(inputW,inputH),0,0,cv::INTER_LINEAR);
-		cv::cvtColor(image,imageRGB,cv::COLOR_BGR2RGB);
+		cv::resize(raw_image,imageRGB,cv::Size(inputW,inputH),0,0,cv::INTER_LINEAR);
+		cv::cvtColor(imageRGB,imageRGB,cv::COLOR_BGR2RGB);
 		//cv::resize(image,image,cv::Size(inputW,inputH),0,0,cv::INTER_LINEAR);
 
 		//float mean[3] = {0.485,0.456,0.406}; 
@@ -145,7 +150,7 @@ public:
 		float* inputdata = new float[1 * channel * inputH * inputW];
 		for (int c=0; c < channel; ++c){
 			for (int j=0, volChl = inputW*inputW; j<volChl; ++j) {
-				inputdata[c*volChl+j] = image.data[j*channel +2 -c];
+				inputdata[c*volChl+j] = imageRGB.data[j*channel +2 -c];
 				//inputdata[c*volChl+j] = image.data[j*channel + c];
 				//std::cout<< data[c*volChl+j] << std::endl;
 			}
@@ -228,19 +233,61 @@ public:
 		else 
 		{
             //KalmanTracker::kf_count = 0;
-			bool bsort = _sort.SORT(detect_result, frameNo, vec_result);
-		    if (!bsort)
-		    {
-		        return;
+            if (_config.track_type == DEEPSORT)
+			{
+				DETECTIONS detections;
+				for (const auto &dr : detect_result)
+			    {
+			    	DETECTION_ROW tmpRow;
+					tmpRow.tlwh = DETECTBOX(dr.rect.x, dr.rect.y, dr.rect.width, dr.rect.height);
+
+					tmpRow.confidence = dr.prob;
+					detections.push_back(tmpRow);
+			    }
+				
+
+				if(FeatureTensor::getInstance(_config.gpu_id,_config.deepsort_file)->getRectsFeature(raw_image, detections))
+		        {
+		            _deepsort->predict();
+		            _deepsort->update(detections);
+		            vec_result.clear();
+		            for(Track& track : _deepsort->tracks) {
+		                if(!track.is_confirmed() || track.time_since_update > 1) continue;
+		                TrackingBox res;
+		                DETECTBOX tmp = track.to_tlwh();
+			            res.box =  cv::Rect_<float>(tmp(0), tmp(1), tmp(2), tmp(3));
+			            res.id = track.track_id;
+			            res.frame = frameNo;
+			            vec_result.push_back(res);		            
+			        }
+				    if (vec_result.size() == 0)
+				    {
+				        return;
+				    }
+		        }
+		        else
+		        {
+		            printf("TensorRT get feature failed!\n");
+		            return;
+		        }
+			}
+			else if (_config.track_type == SORT)
+			{
+				bool bsort = _sort.SORT(detect_result, frameNo, vec_result);
+			    if (!bsort)
+			    {
+			        return;
+			    }		
 		    }
+			
 		}
 	   //  for i,object in enumerate(objects):
     //     x, y, w, h = object[2]
     //     x1, y1, x2, y2 = int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2)
     //     iou_list.append(cal_iou(item[:4],[x1,y1,x2,y2]))
     // max_index = iou_list.index(max(iou_list))
-	    /*
-	    for (const auto &vr : vec_result)
+	    
+	    for (auto &vr : vec_result)
 		{
 			std::vector<double> iouValue;
 			for (const auto &dr : detect_result)
@@ -251,16 +298,24 @@ public:
 			int maxPosition = std::max_element(iouValue.begin(),iouValue.end()) - iouValue.begin();
 			float prob = detect_result[maxPosition].prob;
 			std::string class_name = detect_result[maxPosition].class_name;
-			std::cout<< prob << std::endl;
-			std::cout<< class_name << std::endl;
+			//std::cout<< prob << std::endl;
+			//std::cout<< class_name << std::endl;
 			vr.prob = prob;
 			vr.class_name = class_name;
+			if (vr.box.width + vr.box.x >= width)
+			{
+				vr.box.width = width - vr.box.x - 1;
+			}
+			if (vr.box.height + vr.box.y >= height)
+			{
+				vr.box.height = height - vr.box.y -1;
+			}
 
 			//std::cout << "id:" << r.id << " prob:" << r.prob << " rect:" << r.rect << std::endl;
 			//cv::rectangle(frame, r.box, cv::Scalar(255, 0, 0), 2);
 			//cv::putText(frame, r.class_name.c_str(), cv::Point(r.box.x + 20, r.box.y + 20),
 	        //            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(0, 255, 0), 1, CV_AA);
-		}*/
+		}
 		
 	}
 
@@ -314,16 +369,35 @@ private:
 			assert(false && "Unrecognised network_type. Network Type has to be one among the following : yolov2, yolov2-tiny, yolov3 and yolov3-tiny");
 		}
 	}
+	void build_track()
+	{
+		if (_config.track_type == DEEPSORT)
+		{
+			_deepsort = std::unique_ptr<tracker>{ new tracker(0.2, 100) };
+		}
+		else if (_config.track_type == SORT)
+		{
+			printf("using sort tracker\n");
+		}
+		else
+		{
+			assert(false && "Unrecognised track_type. Track Type has to be one among the following : sort and deepsort");
+		}
+
+	}
 
 private:
 	Config _config;
 	NetworkInfo _yolo_info;
 	InferParams _infer_param;
 	SortTracker _sort;
+	std::unique_ptr<tracker> _deepsort = nullptr;
+	//tracker deeptracker(0.2, 100);
 
 	std::vector<std::string> _vec_net_type{ "yolov2","yolov3","yolov2-tiny","yolov3-tiny" };
 	std::vector<std::string> _vec_precision{ "kINT8","kHALF","kFLOAT" };
 	std::unique_ptr<Yolo> _p_net = nullptr;
+
 };
 
 

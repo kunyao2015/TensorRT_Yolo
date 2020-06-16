@@ -37,6 +37,12 @@ enum Precision
 	FP32
 };
 
+enum TrackType
+{
+	SORT = 0,
+	DEEPSORT
+};
+
 struct Config
 {
 	std::string file_model_cfg					= "configs/yolov3.cfg";
@@ -52,6 +58,11 @@ struct Config
 	int	gpu_id									= 0;
 
 	std::string calibration_image_list_file_txt = "";
+
+	TrackType track_type                        = SORT;
+
+	std::string deepsort_file                   = "configs/deepsort.engine";
+
 };
 
 class API Detector

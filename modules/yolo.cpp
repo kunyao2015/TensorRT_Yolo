@@ -47,7 +47,7 @@ Yolo::Yolo(const uint32_t batchSize, const NetworkInfo& networkInfo, const Infer
     m_NMSThresh(inferParams.nmsThresh),
     m_PrintPerfInfo(inferParams.printPerfInfo),
     m_PrintPredictions(inferParams.printPredictionInfo),
-    m_Logger(Logger()),
+    m_Logger(yololog::Logger()),
     m_BatchSize(batchSize),
     m_Network(nullptr),
     m_Builder(nullptr),

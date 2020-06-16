@@ -227,20 +227,20 @@ bool SortTracker::SORT(const std::vector<DetectBox> &detectResults, int frame_co
             it = m_trackers.erase(it);
     }
     
-    for (auto &vr : trackingResult)
-    {
-        std::vector<double> iouValue;
-        for (const auto &dr : detectResults)
-        {
-            double iou = GetIOU(vr.box, dr.rect);
-            iouValue.push_back(iou);
-        }
-        int maxPosition = std::max_element(iouValue.begin(),iouValue.end()) - iouValue.begin();
-        float prob = detectResults[maxPosition].prob;
-        std::string class_name = detectResults[maxPosition].class_name;
-        vr.prob = prob;
-        vr.class_name = class_name;
-    }
+    // for (auto &vr : trackingResult)
+    // {
+    //     std::vector<double> iouValue;
+    //     for (const auto &dr : detectResults)
+    //     {
+    //         double iou = GetIOU(vr.box, dr.rect);
+    //         iouValue.push_back(iou);
+    //     }
+    //     int maxPosition = std::max_element(iouValue.begin(),iouValue.end()) - iouValue.begin();
+    //     float prob = detectResults[maxPosition].prob;
+    //     std::string class_name = detectResults[maxPosition].class_name;
+    //     vr.prob = prob;
+    //     vr.class_name = class_name;
+    // }
 
 
     // for (auto tb : frameTrackingResult)

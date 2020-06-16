@@ -236,7 +236,7 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
 }
 
 nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, PluginFactory* pluginFactory,
-                                     Logger& logger)
+                                     yololog::Logger& logger)
 {
     // reading the model in memory
     std::cout << "Loading TRT Engine..." << std::endl;

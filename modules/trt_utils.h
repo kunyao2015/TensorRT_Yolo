@@ -55,26 +55,27 @@ struct BBoxInfo
     int classId; // For coco benchmarking
     float prob;
 };
-
-class Logger : public nvinfer1::ILogger
-{
-public:
-    void log(nvinfer1::ILogger::Severity severity, const char* msg) override
+namespace yololog{
+    class Logger : public nvinfer1::ILogger
     {
-        // suppress info-level messages
-        if (severity == Severity::kINFO) return;
-
-        switch (severity)
+    public:
+        void log(nvinfer1::ILogger::Severity severity, const char* msg) override
         {
-        case Severity::kINTERNAL_ERROR: std::cerr << "INTERNAL_ERROR: "; break;
-        case Severity::kERROR: std::cerr << "ERROR: "; break;
-        case Severity::kWARNING: std::cerr << "WARNING: "; break;
-        case Severity::kINFO: std::cerr << "INFO: "; break;
-        default: std::cerr << "UNKNOWN: "; break;
+            // suppress info-level messages
+            if (severity == Severity::kINFO) return;
+
+            switch (severity)
+            {
+            case Severity::kINTERNAL_ERROR: std::cerr << "INTERNAL_ERROR: "; break;
+            case Severity::kERROR: std::cerr << "ERROR: "; break;
+            case Severity::kWARNING: std::cerr << "WARNING: "; break;
+            case Severity::kINFO: std::cerr << "INFO: "; break;
+            default: std::cerr << "UNKNOWN: "; break;
+            }
+            std::cerr << msg << std::endl;
         }
-        std::cerr << msg << std::endl;
-    }
-};
+    };
+}
 
 class YoloTinyMaxpoolPaddingFormula : public nvinfer1::IOutputDimensionsFormula
 {
@@ -132,7 +133,7 @@ std::vector<BBoxInfo> nmsAllClasses(const float nmsThresh, std::vector<BBoxInfo>
                                     const uint32_t numClasses);
 std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<BBoxInfo> binfo);
 nvinfer1::ICudaEngine* loadTRTEngine(const std::string planFilePath, PluginFactory* pluginFactory,
-                                     Logger& logger);
+                                     yololog::Logger& logger);
 std::vector<float> loadWeights(const std::string weightsFilePath, const std::string& networkType);
 std::string dimsToString(const nvinfer1::Dims d);
 void displayDimType(const nvinfer1::Dims d);

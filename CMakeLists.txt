@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.1) 
 project(yolov3-trt)            
 
-file(GLOB_RECURSE sources     	modules/*.hpp modules/*.cpp modules/*.h modules/*.cu extra/*.h)
+file(GLOB_RECURSE sources     	modules/*.hpp modules/*.cpp modules/*.h modules/*.cu extra/*.h deepsort/DeepAppearanceDescriptor/*.cpp deepsort/KalmanFilter/*.cpp deepsort/MunkresAssignment/*.cpp)
 add_executable(yolov3-trt samples/sample_detector.cpp)
+
+include_directories("/usr/local/include/eigen3")
+
+include_directories(./deepsort/DeepAppearanceDescriptor ./deepsort/KalmanFilter ./deepsort/MunkresAssignment)
+
 
 set(TENSORRT_ROOT "/home/aipc/code-YK/TensorRT-5.1.5.0")
 set(OpenCV_DIR "/usr/local/opencv346")
@@ -42,12 +47,8 @@ cuda_add_library(detector SHARED ${sources})
 target_include_directories(detector PRIVATE modules/  ${CUDA_TOOLKIT_ROOT_DIR}/include /home/aipc/code-YK/TensorRT-5.1.5.0/include /usr/local/opencv346/include extra/ ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 #target_link_libraries(detector opencv_core opencv_calib3d opencv_dnn opencv_imgproc opencv_highgui)
 
-target_include_directories(yolov3-trt PRIVATE modules/ extra/)
+target_include_directories(yolov3-trt PRIVATE modules/ extra/ deepsort/)
 
-#LINK_LIBRARIES("/home/yaokun/code/TensorRT-5.1.5.0/lib/libnvcaffe_parser.so")
-#LINK_LIBRARIES("/home/yaokun/code/TensorRT-5.1.5.0/lib/libnvparsers.so")
-#LINK_LIBRARIES("/home/yaokun/code/TensorRT-5.1.5.0/lib/libnvinfer.so")
-#LINK_LIBRARIES("/home/yaokun/code/TensorRT-5.1.5.0/lib/libnvinfer_plugin.so")
 find_path(TENSORRT_INCLUDE_DIR NvInfer.h 
       HINTS ${TENSORRT_ROOT} ${CUDA_TOOLKIT_ROOT_DIR} 
       PATH_SUFFIXES include) 

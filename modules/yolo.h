@@ -150,7 +150,7 @@ protected:
         67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90};
     const bool m_PrintPerfInfo;
     const bool m_PrintPredictions;
-    Logger m_Logger;
+    yololog::Logger m_Logger;
 
     // TRT specific members
     const uint32_t m_BatchSize;
